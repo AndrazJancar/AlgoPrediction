@@ -2,7 +2,7 @@ import os, json
 import pandas as pd
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-from etl import load_da_prices, load_imbalance
+from src.etl import load_da_prices, load_imbalance
 
 TZ = ZoneInfo("Europe/Ljubljana")
 API = os.environ["ENTSOE_API_KEY"]
