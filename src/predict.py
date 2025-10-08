@@ -23,7 +23,7 @@ def main():
 
     # možnost A (najbolj čisto): resample po uri
     # pozor: resample deluje na časovnem indeksu izbrane podmnožice
-    p50_series = df.loc[sel, ['da_price']].resample('H').mean()['da_price']
+    p50_series = df.loc[sel, ['da_price']].resample('h').mean()['da_price']
 
     # če slučajno manjka kakšna ura, zapolni s povprečjem dneva
     fallback = float(p50_series.mean()) if not p50_series.empty else float(df['da_price'].tail(24).mean())
