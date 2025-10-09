@@ -2,7 +2,7 @@ name: daily-forecast
 
 on:
   schedule:
-    - cron: "30 11 * * *"   # GitHub Actions cron je vedno v UTC
+    - cron: "30 10 * * *"   # GitHub Actions cron je vedno v UTC
   workflow_dispatch: {}
 
 jobs:
