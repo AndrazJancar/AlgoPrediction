@@ -1,0 +1,18 @@
+name: weekly-retrain
+on:
+  schedule:
+    - cron: "0 10 * * 1"   # pon ob 10:00 UTC
+  workflow_dispatch: {}
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -r requirements.txt
+      - name: Train models
+        env: { ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }} }
+        run: python -m src.train
+      - uses: actions/upload-artifact@v4
+        with: { name: models, path: models/*.pkl }
