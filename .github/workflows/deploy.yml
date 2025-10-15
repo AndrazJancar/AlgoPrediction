@@ -21,17 +21,38 @@ jobs:
           name: forecast
           path: out/
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: daily-forecast.yml
+          workflow: daily.yml
           workflow_conclusion: success
+        continue-on-error: true
+
+      - name: Create out directory if not exists
+        run: mkdir -p out
+
+      - name: Check if forecast files exist
+        id: check_files
+        run: |
+          if [ -f out/forecast_*.json ]; then
+            echo "forecast_files=true" >> $GITHUB_OUTPUT
+            echo "Found forecast files:"
+            ls -la out/
+          else
+            echo "forecast_files=false" >> $GITHUB_OUTPUT
+            echo "No forecast files found in out/"
+            # Create a placeholder file
+            echo '{"message": "No forecasts available yet", "date": "'$(date +%Y-%m-%d)'"}' > out/placeholder.json
+          fi
 
       - name: Setup Pages
+        if: steps.check_files.outputs.forecast_files == 'true'
         uses: actions/configure-pages@v4
 
       - name: Upload Pages artifact
+        if: steps.check_files.outputs.forecast_files == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: out/
 
       - name: Deploy to GitHub Pages
+        if: steps.check_files.outputs.forecast_files == 'true'
         id: deployment
         uses: actions/deploy-pages@v4
