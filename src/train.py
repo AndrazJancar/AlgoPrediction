@@ -12,6 +12,7 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.linear_model import ElasticNet
+from sklearn.impute import SimpleImputer
 from lightgbm import LGBMRegressor
 import lightgbm
 
@@ -58,9 +59,22 @@ def train_models(days_back: int = 400, freq: str = "15T"):
         X_tr, y_tr = X.iloc[train_idx], y.iloc[train_idx]
         X_va, y_va = X.iloc[val_idx], y.iloc[val_idx]
         
+        # Handle NaN values in training and validation data
+        imputer = SimpleImputer(strategy='mean')
+        X_tr_imputed = pd.DataFrame(
+            imputer.fit_transform(X_tr), 
+            columns=X_tr.columns, 
+            index=X_tr.index
+        )
+        X_va_imputed = pd.DataFrame(
+            imputer.transform(X_va), 
+            columns=X_va.columns, 
+            index=X_va.index
+        )
+        
         # 1. Baseline model (ElasticNet) - fast and interpretable
         baseline = ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42, max_iter=2000)
-        baseline.fit(X_tr, y_tr)
+        baseline.fit(X_tr_imputed, y_tr)
         all_models['baseline'].append(baseline)
         
         # 2. LightGBM P50 (main model)
@@ -69,7 +83,7 @@ def train_models(days_back: int = 400, freq: str = "15T"):
             subsample=0.8, colsample_bytree=0.8, random_state=42,
             min_child_samples=20, reg_alpha=0.1, reg_lambda=0.1
         )
-        lgbm_p50.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], 
+        lgbm_p50.fit(X_tr_imputed, y_tr, eval_set=[(X_va_imputed, y_va)], 
                      callbacks=[lightgbm.early_stopping(50, verbose=False)])
         all_models['lgbm_p50'].append(lgbm_p50)
         
@@ -87,16 +101,16 @@ def train_models(days_back: int = 400, freq: str = "15T"):
             min_child_samples=50, reg_alpha=0.2, reg_lambda=0.2
         )
         
-        lgbm_p10.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], 
+        lgbm_p10.fit(X_tr_imputed, y_tr, eval_set=[(X_va_imputed, y_va)], 
                      callbacks=[lightgbm.early_stopping(50, verbose=False)])
-        lgbm_p90.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], 
+        lgbm_p90.fit(X_tr_imputed, y_tr, eval_set=[(X_va_imputed, y_va)], 
                      callbacks=[lightgbm.early_stopping(50, verbose=False)])
         
         all_models['lgbm_p10'].append(lgbm_p10)
         all_models['lgbm_p90'].append(lgbm_p90)
         
         # Validation score
-        p50_pred = lgbm_p50.predict(X_va)
+        p50_pred = lgbm_p50.predict(X_va_imputed)
         mae = mean_absolute_error(y_va, p50_pred)
         val_scores.append(mae)
     
@@ -114,8 +128,16 @@ def train_models(days_back: int = 400, freq: str = "15T"):
     final_X_tr, final_y_tr = X.iloc[splits[-1][0]], y.iloc[splits[-1][0]]
     final_X_va, final_y_va = X.iloc[splits[-1][1]], y.iloc[splits[-1][1]]
     
-    baseline_pred = all_models['baseline'][best_split_idx].predict(final_X_va)
-    lgbm_pred = all_models['lgbm_p50'][best_split_idx].predict(final_X_va)
+    # Impute final validation data
+    final_imputer = SimpleImputer(strategy='mean')
+    final_X_va_imputed = pd.DataFrame(
+        final_imputer.fit_transform(final_X_va), 
+        columns=final_X_va.columns, 
+        index=final_X_va.index
+    )
+    
+    baseline_pred = all_models['baseline'][best_split_idx].predict(final_X_va_imputed)
+    lgbm_pred = all_models['lgbm_p50'][best_split_idx].predict(final_X_va_imputed)
     
     report = {
         "trained_at": datetime.utcnow().isoformat() + "Z",

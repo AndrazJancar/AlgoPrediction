@@ -8,6 +8,7 @@ import os
 import pandas as pd
 import numpy as np
 import joblib
+from sklearn.impute import SimpleImputer
 from entsoe import EntsoePandasClient
 
 from .features import fetch_history, build_inference_frame, TZ, BZN
@@ -64,11 +65,24 @@ def forecast_next_day(freq: str = "15T"):
 
     X_pred = build_inference_frame(bundle.history, tomorrow, freq=freq)
     
-    # Get predictions from all models
-    baseline_pred = models['baseline'].predict(X_pred)
-    p10 = models['p10'].predict(X_pred)
-    p50 = models['p50'].predict(X_pred)
-    p90 = models['p90'].predict(X_pred)
+    # Handle NaN values in X_pred before prediction
+    print(f"X_pred shape: {X_pred.shape}, NaN count: {X_pred.isna().sum().sum()}")
+    
+    # Impute NaN values using mean strategy
+    imputer = SimpleImputer(strategy='mean')
+    X_pred_imputed = pd.DataFrame(
+        imputer.fit_transform(X_pred), 
+        columns=X_pred.columns, 
+        index=X_pred.index
+    )
+    
+    print(f"X_pred_imputed shape: {X_pred_imputed.shape}, NaN count: {X_pred_imputed.isna().sum().sum()}")
+    
+    # Get predictions from all models using imputed data
+    baseline_pred = models['baseline'].predict(X_pred_imputed)
+    p10 = models['p10'].predict(X_pred_imputed)
+    p50 = models['p50'].predict(X_pred_imputed)
+    p90 = models['p90'].predict(X_pred_imputed)
     
     # Ensemble: blend baseline and LightGBM (simple weighted average)
     ensemble_weight = 0.3  # 30% baseline, 70% LightGBM
