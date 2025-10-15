@@ -1,7 +1,7 @@
-name: weekly-retrain
+name: daily-retrain
 on:
   schedule:
-    - cron: "0 10 * * 1"   # pon ob 10:00 UTC
+    - cron: "0 10 * * *"   # vsak dan ob 10:00 UTC
   workflow_dispatch: {}
 jobs:
   retrain:

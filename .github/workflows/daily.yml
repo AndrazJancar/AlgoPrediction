@@ -2,7 +2,7 @@ name: daily-forecast
 
 on:
   schedule:
-    - cron: "30 10 * * *"   # GitHub Actions cron je vedno v UTC
+    - cron: "0 10 * * *"   # GitHub Actions cron je vedno v UTC - 10:00 UTC
   workflow_dispatch: {}
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
           name: models
           path: models/
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: weekly.yml
+          workflow: daily-retrain.yml
           workflow_conclusion: success
         continue-on-error: true
 
