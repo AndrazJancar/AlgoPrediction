@@ -19,8 +19,7 @@ class DataBundle:
 
 def fetch_history(client, days_back: int = 400) -> DataBundle:
     """Povleče zgodovino DA cen in jo normalizira na urni time-index."""
-    api_key = os.environ["ENTSOE_API_KEY"]
-    df = load_da_prices(api_key, days=days_back).copy()
+    df = load_da_prices(os.environ["ENTSOE_API_KEY"], days=days_back).copy()
     # poskrbi, da je urni raster in brez lukenj
     df = df.resample("h").mean()  # 'h' (mala) – velika 'H' je deprecated
     df = df.rename(columns={"DA_price": "da_price"}) if "DA_price" in df.columns else df
