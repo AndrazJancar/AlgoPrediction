@@ -34,15 +34,27 @@ def train_models(days_back: int = 400):
     bundle = fetch_history(client, days_back=days_back)
     X, y = make_supervised(bundle.history)
 
-    # Enhanced time series validation with multiple splits
-    tss = TimeSeriesSplit(n_splits=5)
-    splits = list(tss.split(X))
+    # Check if we have enough samples for time series split
+    min_samples = 100  # minimum samples needed
+    if len(X) < min_samples:
+        print(f"Warning: Only {len(X)} samples available, using simple train/validation split")
+        # Simple 80/20 split
+        split_point = int(0.8 * len(X))
+        train_idx = list(range(split_point))
+        val_idx = list(range(split_point, len(X)))
+        splits = [(train_idx, val_idx)]
+    else:
+        # Enhanced time series validation with multiple splits
+        n_splits = min(5, len(X) // 50)  # Adaptive number of splits
+        tss = TimeSeriesSplit(n_splits=n_splits)
+        splits = list(tss.split(X))
+        print(f"Using {n_splits} time series splits with {len(X)} samples")
     
-    # Use last 2 splits for validation (more robust)
+    # Use last 2 splits for validation (more robust) or single split if not enough data
     val_scores = []
     all_models = {'baseline': [], 'lgbm_p50': [], 'lgbm_p10': [], 'lgbm_p90': []}
     
-    for train_idx, val_idx in splits[-2:]:  # Last 2 splits
+    for train_idx, val_idx in splits[-2:]:  # Last 2 splits or single split
         X_tr, y_tr = X.iloc[train_idx], y.iloc[train_idx]
         X_va, y_va = X.iloc[val_idx], y.iloc[val_idx]
         
@@ -122,7 +134,7 @@ def train_models(days_back: int = 400):
     print(f"LightGBM MAE: {mean_absolute_error(final_y_va, lgbm_pred):.3f}")
 
 def main():
-    train_models(days_back=400)
+    train_models(days_back=500)  # More data for better training
 
 if __name__ == "__main__":
     main()
