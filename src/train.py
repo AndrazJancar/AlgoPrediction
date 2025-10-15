@@ -29,10 +29,10 @@ def _client() -> EntsoePandasClient:
         raise RuntimeError("Missing ENTSOE_API_KEY")
     return EntsoePandasClient(api_key=api_key)
 
-def train_models(days_back: int = 400):
+def train_models(days_back: int = 400, freq: str = "15T"):
     client = _client()
-    bundle = fetch_history(client, days_back=days_back)
-    X, y = make_supervised(bundle.history)
+    bundle = fetch_history(client, days_back=days_back, freq=freq)
+    X, y = make_supervised(bundle.history, freq=freq)
 
     # Check if we have enough samples for time series split
     min_samples = 100  # minimum samples needed
@@ -134,7 +134,7 @@ def train_models(days_back: int = 400):
     print(f"LightGBM MAE: {mean_absolute_error(final_y_va, lgbm_pred):.3f}")
 
 def main():
-    train_models(days_back=500)  # More data for better training
+    train_models(days_back=500, freq="15T")  # More data for better training with 15-min resolution
 
 if __name__ == "__main__":
     main()

@@ -48,9 +48,9 @@ def _persistence_forecast(df: pd.DataFrame, target_date: pd.Timestamp):
     s = df.loc[df.index.date == yday, "da_price"]
     return s.values.tolist()
 
-def forecast_next_day():
+def forecast_next_day(freq: str = "15T"):
     client = _client()
-    bundle = fetch_history(client, days_back=120)
+    bundle = fetch_history(client, days_back=120, freq=freq)
     tomorrow = (pd.Timestamp.now(tz=TZ) + pd.Timedelta(days=1)).normalize()
 
     models = _load_models()
@@ -62,7 +62,7 @@ def forecast_next_day():
         print(f"Wrote {OUT_DIR}/forecast_{tomorrow.date()}.json")
         return
 
-    X_pred = build_inference_frame(bundle.history, tomorrow)
+    X_pred = build_inference_frame(bundle.history, tomorrow, freq=freq)
     
     # Get predictions from all models
     baseline_pred = models['baseline'].predict(X_pred)

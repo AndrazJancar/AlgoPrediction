@@ -45,8 +45,8 @@ def _save_to_cache(df: pd.DataFrame, cache_path: Path):
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(cache_path)
 
-def load_da_prices(api_key: str, days: int = 120, use_cache: bool = True) -> pd.DataFrame:
-    """Load day-ahead prices with caching and better error handling"""
+def load_da_prices(api_key: str, days: int = 120, use_cache: bool = True, freq: str = "15T") -> pd.DataFrame:
+    """Load day-ahead prices with caching and 15-minute resolution"""
     c = EntsoePandasClient(api_key=api_key)
     end_local = pd.Timestamp(datetime.now(TZ).date() + timedelta(days=1), tz=TZ)
     start_local = end_local - pd.Timedelta(days=days)
@@ -63,6 +63,10 @@ def load_da_prices(api_key: str, days: int = 120, use_cache: bool = True) -> pd.
         df = _to_df(da, "da_price")
         df = df.tz_convert(TZ)
         
+        # Resample to 15-minute intervals if needed
+        if freq == "15T" and len(df) > 0:
+            df = df.resample("15T").ffill()  # Forward fill for 15-min intervals
+        
         # Cache the result
         if use_cache:
             _save_to_cache(df, cache_path)
@@ -71,7 +75,7 @@ def load_da_prices(api_key: str, days: int = 120, use_cache: bool = True) -> pd.
     except Exception as e:
         print(f"Error loading DA prices: {e}")
         # Return empty DataFrame with proper structure
-        return pd.DataFrame(columns=["da_price"], index=pd.date_range(start_local, end_local, freq="h", tz=TZ))
+        return pd.DataFrame(columns=["da_price"], index=pd.date_range(start_local, end_local, freq=freq, tz=TZ))
 
 def load_load_forecast(api_key: str, days: int = 30) -> pd.DataFrame:
     """Load load forecast data for better predictions"""
@@ -113,4 +117,45 @@ def load_imbalance(api_key: str, days: int = 120) -> pd.DataFrame:
         return df.tz_convert(TZ)
     except Exception as e:
         print(f"Error loading imbalance prices: {e}")
+        return pd.DataFrame()
+
+def load_borzen_imbalance_prices(days: int = 30) -> pd.DataFrame:
+    """
+    Load imbalance prices from Borzen.si
+    Note: This would require web scraping or API access to Borzen data
+    For now, returns empty DataFrame - needs implementation based on Borzen's data format
+    """
+    print("Warning: Borzen imbalance prices not yet implemented")
+    print("Visit: https://borzen.si/sl-si/ for imbalance price data")
+    return pd.DataFrame()
+
+def load_bsp_market_data(days: int = 30) -> pd.DataFrame:
+    """
+    Load market data from BSP South Pool
+    Note: This would require web scraping or API access to BSP data
+    For now, returns empty DataFrame - needs implementation based on BSP's data format
+    """
+    print("Warning: BSP market data not yet implemented")
+    print("Visit: https://www.bsp-southpool.com/domov.html for market data")
+    return pd.DataFrame()
+
+def load_intraday_prices(api_key: str, days: int = 7) -> pd.DataFrame:
+    """Load intraday prices for 15-minute trading"""
+    c = EntsoePandasClient(api_key=api_key)
+    end_local = pd.Timestamp(datetime.now(TZ).date() + timedelta(days=1), tz=TZ)
+    start_local = end_local - pd.Timedelta(days=days)
+    
+    try:
+        # Try to get intraday prices (if available for SI market)
+        intraday = c.query_intraday_prices(BZN, start=start_local, end=end_local)
+        df = _to_df(intraday, "intraday_price")
+        df = df.tz_convert(TZ)
+        
+        # Ensure 15-minute resolution
+        if len(df) > 0:
+            df = df.resample("15T").ffill()
+        
+        return df
+    except Exception as e:
+        print(f"Error loading intraday prices: {e}")
         return pd.DataFrame()
