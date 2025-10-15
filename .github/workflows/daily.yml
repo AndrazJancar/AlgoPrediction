@@ -21,10 +21,13 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Download models
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
           name: models
           path: models/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: weekly.yml
+          workflow_conclusion: success
         continue-on-error: true
 
       - name: Forecast D+1
