@@ -13,7 +13,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.linear_model import ElasticNet
 from lightgbm import LGBMRegressor
-import numpy as np
+import lightgbm
 
 from entsoe import EntsoePandasClient
 from .features import fetch_history, make_supervised, TZ, BZN
@@ -70,7 +70,7 @@ def train_models(days_back: int = 400):
             min_child_samples=20, reg_alpha=0.1, reg_lambda=0.1
         )
         lgbm_p50.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], 
-                     callbacks=[lgbm_p50.early_stopping(50, verbose=False)])
+                     callbacks=[lightgbm.early_stopping(50, verbose=False)])
         all_models['lgbm_p50'].append(lgbm_p50)
         
         # 3. Quantile models
@@ -88,9 +88,9 @@ def train_models(days_back: int = 400):
         )
         
         lgbm_p10.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], 
-                     callbacks=[lgbm_p10.early_stopping(50, verbose=False)])
+                     callbacks=[lightgbm.early_stopping(50, verbose=False)])
         lgbm_p90.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], 
-                     callbacks=[lgbm_p90.early_stopping(50, verbose=False)])
+                     callbacks=[lightgbm.early_stopping(50, verbose=False)])
         
         all_models['lgbm_p10'].append(lgbm_p10)
         all_models['lgbm_p90'].append(lgbm_p90)
