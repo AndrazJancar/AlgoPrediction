@@ -73,18 +73,18 @@ def train_models(days_back: int = 400):
                      callbacks=[lightgbm.early_stopping(50, verbose=False)])
         all_models['lgbm_p50'].append(lgbm_p50)
         
-        # 3. Quantile models
+        # 3. Quantile models with better parameters
         lgbm_p10 = LGBMRegressor(
             objective="quantile", alpha=0.10,
-            n_estimators=1000, learning_rate=0.03, num_leaves=128,
-            subsample=0.8, colsample_bytree=0.8, random_state=42,
-            min_child_samples=20, reg_alpha=0.1, reg_lambda=0.1
+            n_estimators=800, learning_rate=0.05, num_leaves=64,
+            subsample=0.9, colsample_bytree=0.9, random_state=42,
+            min_child_samples=50, reg_alpha=0.2, reg_lambda=0.2
         )
         lgbm_p90 = LGBMRegressor(
             objective="quantile", alpha=0.90,
-            n_estimators=1000, learning_rate=0.03, num_leaves=128,
-            subsample=0.8, colsample_bytree=0.8, random_state=42,
-            min_child_samples=20, reg_alpha=0.1, reg_lambda=0.1
+            n_estimators=800, learning_rate=0.05, num_leaves=64,
+            subsample=0.9, colsample_bytree=0.9, random_state=42,
+            min_child_samples=50, reg_alpha=0.2, reg_lambda=0.2
         )
         
         lgbm_p10.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], 

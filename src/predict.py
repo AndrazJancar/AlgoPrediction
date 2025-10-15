@@ -80,7 +80,9 @@ def forecast_next_day():
     
     # Calculate prediction intervals and confidence
     prediction_interval = dfq["p90"].values - dfq["p10"].values
-    confidence_score = 1.0 - (prediction_interval / (dfq["p50"].values + 1e-8))
+    # Better confidence score: based on relative interval width
+    relative_interval = prediction_interval / (dfq["p50"].values + 1e-8)
+    confidence_score = np.clip(1.0 - (relative_interval / 2.0), 0.0, 1.0)  # Scale to 0-1
     
     out = {
         "date": str(tomorrow.date()),

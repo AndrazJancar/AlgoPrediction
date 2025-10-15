@@ -1,0 +1,37 @@
+name: Deploy Forecasts
+
+on:
+  workflow_run:
+    workflows: ["daily-forecast"]
+    types: [completed]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download forecast artifact
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          name: forecast
+          path: out/
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: daily-forecast.yml
+          workflow_conclusion: success
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
