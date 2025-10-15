@@ -45,7 +45,7 @@ def train_models(days_back: int = 400):
         n_estimators=800, learning_rate=0.05, num_leaves=64, subsample=0.8,
         colsample_bytree=0.8, random_state=42
     )
-    mdl_p50.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], verbose=False)
+    mdl_p50.fit(X_tr, y_tr, eval_set=[(X_va, y_va)])
 
     # Kvantili – objective='quantile', alpha določa kvantil
     mdl_p10 = LGBMRegressor(
@@ -58,8 +58,8 @@ def train_models(days_back: int = 400):
         n_estimators=800, learning_rate=0.05, num_leaves=64, subsample=0.8,
         colsample_bytree=0.8, random_state=42
     )
-    mdl_p10.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], verbose=False)
-    mdl_p90.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], verbose=False)
+    mdl_p10.fit(X_tr, y_tr, eval_set=[(X_va, y_va)])
+    mdl_p90.fit(X_tr, y_tr, eval_set=[(X_va, y_va)])
 
     # Preprosta validacija
     p50_va = mdl_p50.predict(X_va)
