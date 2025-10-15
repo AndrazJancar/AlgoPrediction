@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import os
 import pandas as pd
+import numpy as np
 import joblib
 from entsoe import EntsoePandasClient
 
@@ -22,11 +23,19 @@ def _client():
     return EntsoePandasClient(api_key=api_key)
 
 def _load_models():
-    p50 = MODELS_DIR / "lgbm_p50.pkl"
-    p10 = MODELS_DIR / "lgbm_p10.pkl"
-    p90 = MODELS_DIR / "lgbm_p90.pkl"
-    if p50.exists() and p10.exists() and p90.exists():
-        return (joblib.load(p10), joblib.load(p50), joblib.load(p90))
+    """Load all trained models including baseline"""
+    baseline_path = MODELS_DIR / "baseline.pkl"
+    p50_path = MODELS_DIR / "lgbm_p50.pkl"
+    p10_path = MODELS_DIR / "lgbm_p10.pkl"
+    p90_path = MODELS_DIR / "lgbm_p90.pkl"
+    
+    if all(path.exists() for path in [baseline_path, p50_path, p10_path, p90_path]):
+        return {
+            'baseline': joblib.load(baseline_path),
+            'p10': joblib.load(p10_path),
+            'p50': joblib.load(p50_path),
+            'p90': joblib.load(p90_path)
+        }
     return None
 
 def _persistence_forecast(df: pd.DataFrame, target_date: pd.Timestamp):
@@ -53,24 +62,44 @@ def forecast_next_day():
         print(f"Wrote {OUT_DIR}/forecast_{tomorrow.date()}.json")
         return
 
-    mdl_p10, mdl_p50, mdl_p90 = models
     X_pred = build_inference_frame(bundle.history, tomorrow)
-    p10 = mdl_p10.predict(X_pred)
-    p50 = mdl_p50.predict(X_pred)
-    p90 = mdl_p90.predict(X_pred)
-
-    # Uredi, da je P10 <= P50 <= P90
-    dfq = pd.DataFrame({"p10": p10, "p50": p50, "p90": p90})
-    dfq = dfq.apply(sorted, axis=1, result_type="broadcast")  # vrstično sortiranje
-
+    
+    # Get predictions from all models
+    baseline_pred = models['baseline'].predict(X_pred)
+    p10 = models['p10'].predict(X_pred)
+    p50 = models['p50'].predict(X_pred)
+    p90 = models['p90'].predict(X_pred)
+    
+    # Ensemble: blend baseline and LightGBM (simple weighted average)
+    ensemble_weight = 0.3  # 30% baseline, 70% LightGBM
+    p50_ensemble = ensemble_weight * baseline_pred + (1 - ensemble_weight) * p50
+    
+    # Ensure quantile ordering: P10 <= P50 <= P90
+    dfq = pd.DataFrame({"p10": p10, "p50": p50_ensemble, "p90": p90})
+    dfq = dfq.apply(sorted, axis=1, result_type="broadcast")  # row-wise sorting
+    
+    # Calculate prediction intervals and confidence
+    prediction_interval = dfq["p90"].values - dfq["p10"].values
+    confidence_score = 1.0 - (prediction_interval / (dfq["p50"].values + 1e-8))
+    
     out = {
         "date": str(tomorrow.date()),
         "P10": [float(x) for x in dfq["p10"].values],
         "P50": [float(x) for x in dfq["p50"].values],
         "P90": [float(x) for x in dfq["p90"].values],
+        "baseline": [float(x) for x in baseline_pred],
+        "prediction_interval": [float(x) for x in prediction_interval],
+        "confidence_score": [float(x) for x in confidence_score],
+        "model_info": {
+            "ensemble_weight": ensemble_weight,
+            "features_count": len(X_pred.columns),
+            "generated_at": datetime.now().isoformat()
+        }
     }
-    OUT_DIR.joinpath(f"forecast_{tomorrow.date()}.json").write_text(json.dumps(out))
+    OUT_DIR.joinpath(f"forecast_{tomorrow.date()}.json").write_text(json.dumps(out, indent=2))
     print(f"Wrote {OUT_DIR}/forecast_{tomorrow.date()}.json")
+    print(f"Average prediction interval: {np.mean(prediction_interval):.2f} EUR/MWh")
+    print(f"Average confidence score: {np.mean(confidence_score):.3f}")
 
 def main():
     forecast_next_day()
