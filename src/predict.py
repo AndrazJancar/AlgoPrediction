@@ -31,7 +31,11 @@ def _load_models():
 
 def _persistence_forecast(df: pd.DataFrame, target_date: pd.Timestamp):
     """Fallback baseline: povprečje včerajšnje ure (kar imaš že delujoče)."""
-    yday = (pd.Timestamp(target_date).tz_localize(TZ) - pd.Timedelta(days=1)).date()
+    if target_date.tz is None:
+        target_date = target_date.tz_localize(TZ)
+    else:
+        target_date = target_date.tz_convert(TZ)
+    yday = (target_date - pd.Timedelta(days=1)).date()
     s = df.loc[df.index.date == yday, "da_price"]
     return s.values.tolist()
 

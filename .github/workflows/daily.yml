@@ -20,6 +20,13 @@ jobs:
       - name: Install deps
         run: pip install -r requirements.txt
 
+      - name: Download models
+        uses: actions/download-artifact@v4
+        with:
+          name: models
+          path: models/
+        continue-on-error: true
+
       - name: Forecast D+1
         env:
           ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
