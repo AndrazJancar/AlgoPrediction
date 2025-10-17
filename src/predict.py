@@ -20,7 +20,10 @@ OUT_DIR.mkdir(exist_ok=True)
 def _client():
     api_key = os.environ.get("ENTSOE_API_KEY")
     if not api_key:
-        raise RuntimeError("Missing ENTSOE_API_KEY")
+        # Return a lightweight object with api_key=None; fetch_history will fallback to cache
+        class _Dummy:
+            api_key = None
+        return _Dummy()
     return EntsoePandasClient(api_key=api_key)
 
 def _load_models():

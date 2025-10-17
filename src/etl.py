@@ -45,20 +45,27 @@ def _save_to_cache(df: pd.DataFrame, cache_path: Path):
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(cache_path)
 
-def load_da_prices(api_key: str, days: int = 120, use_cache: bool = True, freq: str = "15T") -> pd.DataFrame:
-    """Load day-ahead prices with caching and 15-minute resolution"""
-    c = EntsoePandasClient(api_key=api_key)
+def load_da_prices(api_key: str | None, days: int = 120, use_cache: bool = True, freq: str = "15T") -> pd.DataFrame:
+    """Load day-ahead prices with caching and 15-minute resolution.
+    If api_key is None or empty, try cache first and skip remote call.
+    """
     end_local = pd.Timestamp(datetime.now(TZ).date() + timedelta(days=1), tz=TZ)
     start_local = end_local - pd.Timedelta(days=days)
     
     # Try to load from cache first
+    cache_path = _cache_path("da_prices", datetime.now())
     if use_cache:
-        cache_path = _cache_path("da_prices", datetime.now())
         cached_df = _load_from_cache(cache_path)
         if cached_df is not None:
             return cached_df
     
+    # If no API key, return empty frame with correct index to allow baseline
+    if not api_key:
+        print("No ENTSOE_API_KEY; returning empty frame (will trigger baseline/persistence)")
+        return pd.DataFrame(columns=["da_price"], index=pd.date_range(start_local, end_local, freq=freq, tz=TZ))
+
     try:
+        c = EntsoePandasClient(api_key=api_key)
         da = c.query_day_ahead_prices(BZN, start=start_local, end=end_local)
         df = _to_df(da, "da_price")
         df = df.tz_convert(TZ)

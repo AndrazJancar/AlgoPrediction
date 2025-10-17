@@ -16,8 +16,11 @@ class DataBundle:
     history: pd.DataFrame  # index = tz-aware hourly, col 'da_price'
 
 def fetch_history(client, days_back: int = 400, freq: str = "15T") -> DataBundle:
-    """Povleče zgodovino DA cen in jo normalizira na 15-minutni time-index."""
-    df = load_da_prices(client.api_key, days=days_back, freq=freq).copy()
+    """Povleče zgodovino DA cen in jo normalizira na 15-minutni time-index.
+    Če `client` manjka ali nima `api_key`, poskusi iz predpomnilnika.
+    """
+    api_key = getattr(client, "api_key", None) if client is not None else None
+    df = load_da_prices(api_key, days=days_back, freq=freq).copy()
     
     # Ensure 15-minute resolution
     if freq == "15T":
