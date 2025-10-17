@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="sl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AlgoPrediction – Napovedi</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"; margin: 24px; line-height: 1.5; }
+      header { margin-bottom: 16px; }
+      h1 { margin: 0 0 4px 0; font-size: 20px; }
+      .meta { color: #888; font-size: 12px; }
+      .controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+      select, button, a.button { padding: 6px 10px; font: inherit; }
+      a.button { border: 1px solid currentColor; border-radius: 6px; text-decoration: none; }
+      pre { white-space: pre-wrap; word-break: break-word; background: rgba(127,127,127,.08); padding: 12px; border-radius: 8px; overflow: auto; }
+      footer { margin-top: 24px; font-size: 12px; color: #888; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>AlgoPrediction – Napovedi</h1>
+      <div class="meta">Statična stran za pregled najnovejših napovedi iz `out/`.</div>
+    </header>
+    <div class="controls">
+      <label>
+        Datoteka:
+        <select id="fileSelect"></select>
+      </label>
+      <a id="downloadLink" class="button" href="#" download>Prenesi JSON</a>
+      <button id="refreshBtn">Osveži</button>
+    </div>
+    <pre id="viewer">Nalagam manifest...</pre>
+    <footer>
+      Postreženo prek GitHub Pages iz mape `docs/`.
+    </footer>
+    <script>
+      const manifestUrl = 'data/manifest.json';
+      const fileSelect = document.getElementById('fileSelect');
+      const viewer = document.getElementById('viewer');
+      const downloadLink = document.getElementById('downloadLink');
+      const refreshBtn = document.getElementById('refreshBtn');
+
+      async function fetchJson(url) {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status + ' – ' + url);
+        return await res.json();
+      }
+
+      function setDownloadHref(path) {
+        downloadLink.href = path;
+        const name = path.split('/').pop();
+        downloadLink.download = name || 'forecast.json';
+      }
+
+      async function loadSelected(path) {
+        viewer.textContent = 'Nalagam ' + path + ' ...';
+        try {
+          const data = await fetchJson(path);
+          viewer.textContent = JSON.stringify(data, null, 2);
+          setDownloadHref(path);
+        } catch (e) {
+          viewer.textContent = 'Napaka pri branju: ' + e.message;
+        }
+      }
+
+      function populateSelect(files) {
+        fileSelect.innerHTML = '';
+        for (const f of files) {
+          const opt = document.createElement('option');
+          opt.value = f.path;
+          opt.textContent = f.label || f.path;
+          fileSelect.appendChild(opt);
+        }
+      }
+
+      async function loadManifest() {
+        viewer.textContent = 'Nalagam manifest...';
+        try {
+          const manifest = await fetchJson(manifestUrl);
+          const files = Array.isArray(manifest.files) ? manifest.files : [];
+          if (files.length === 0) {
+            viewer.textContent = 'Manifest je prazen. Dodaj JSON v `docs/data/` in posodobi manifest.';
+            return;
+          }
+          // privzeto izberi prvega (najpogosteje najnovejšega)
+          populateSelect(files);
+          await loadSelected(files[0].path);
+        } catch (e) {
+          viewer.textContent = 'Napaka pri branju manifesta: ' + e.message;
+        }
+      }
+
+      fileSelect.addEventListener('change', () => loadSelected(fileSelect.value));
+      refreshBtn.addEventListener('click', () => loadManifest());
+
+      loadManifest();
+    </script>
+  </body>
+  </html>
+
+
