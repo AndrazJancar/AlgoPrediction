@@ -18,3 +18,14 @@ Ob vsakem pushu na `main` se zažene:
 python scripts/sync_forecasts_to_docs.py
 ```
 Commit + push na `main` sproži deploy.
+
+## Daily avtomatika
+
+Workflow `.github/workflows/daily.yml` vsak dan:
+- zažene `scripts/daily_run.py` (predikcija, snapshoti Borzen/BSP, sync v `docs/`)
+- objavi `docs/` na GitHub Pages
+
+Potrebne skrivnosti (Settings → Secrets and variables → Actions):
+- `ENTSOE_API_KEY`: ključ za ENTSO-E API
+
+Urejanje urnika: v `daily.yml` spremenite `cron: '15 17 * * *'` (UTC).

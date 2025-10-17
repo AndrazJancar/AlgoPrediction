@@ -9,3 +9,4 @@ matplotlib
 shap
 pyarrow>=10.0
 fastparquet>=0.8
+requests>=2.31
