@@ -2,3 +2,7 @@
 .env
 data/
 *.parquet
+__pycache__/
+*.pyc
+.python-version
+.vscode/

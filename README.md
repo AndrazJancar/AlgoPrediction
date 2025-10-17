@@ -29,3 +29,12 @@ Potrebne skrivnosti (Settings → Secrets and variables → Actions):
 - `ENTSOE_API_KEY`: ključ za ENTSO-E API
 
 Urejanje urnika: v `daily.yml` spremenite `cron: '15 17 * * *'` (UTC).
+
+## Codespaces / Devcontainer
+
+1) Open in GitHub Codespaces → ta repo že vsebuje `.devcontainer/devcontainer.json`.
+2) V Codespaces ustvarite `.env` datoteko (po vzoru `.env.example`) in nastavite `ENTSOE_API_KEY`.
+3) Namestitev: `make install`
+4) Preverjanje: `make health` (pove, ali ključ deluje in koliko vrstic vrne ENTSOE)
+5) Napoved: `make predict` → `out/forecast_YYYY-MM-DD.json`
+6) Objava v Pages lokalno: `make sync` (viewer v `docs/` prikaže novo napoved)

@@ -17,6 +17,7 @@ from lightgbm import LGBMRegressor
 import lightgbm
 
 from entsoe import EntsoePandasClient
+from .util_env import get_entsoe_api_key
 from .features import fetch_history, make_supervised, TZ, BZN
 
 MODELS_DIR = Path("models")
@@ -25,7 +26,7 @@ MODELS_DIR.mkdir(exist_ok=True)
 OUT_DIR.mkdir(exist_ok=True)
 
 def _client() -> EntsoePandasClient:
-    api_key = os.environ.get("ENTSOE_API_KEY")
+    api_key = get_entsoe_api_key()
     if not api_key:
         raise RuntimeError("Missing ENTSOE_API_KEY")
     return EntsoePandasClient(api_key=api_key)

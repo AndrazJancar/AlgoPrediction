@@ -10,6 +10,7 @@ import numpy as np
 import joblib
 from sklearn.impute import SimpleImputer
 from entsoe import EntsoePandasClient
+from .util_env import get_entsoe_api_key
 
 from .features import fetch_history, build_inference_frame, TZ, BZN
 
@@ -18,7 +19,7 @@ MODELS_DIR = Path("models")
 OUT_DIR.mkdir(exist_ok=True)
 
 def _client():
-    api_key = os.environ.get("ENTSOE_API_KEY")
+    api_key = get_entsoe_api_key()
     if not api_key:
         # Return a lightweight object with api_key=None; fetch_history will fallback to cache
         class _Dummy:
