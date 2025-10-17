@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 import pandas as pd
 from zoneinfo import ZoneInfo
 from datetime import timedelta
 from entsoe import EntsoePandasClient
+
+# Ensure repo root is on sys.path for `from src import ...` when executed as a script
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from src.util_env import get_entsoe_api_key
 from src.features import TZ, BZN
 

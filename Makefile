@@ -22,6 +22,6 @@ docs:
 	$(PY) scripts/daily_run.py
 
 health:
-	$(PY) scripts/health_check.py
+	PYTHONPATH=. $(PY) scripts/health_check.py
 
 
